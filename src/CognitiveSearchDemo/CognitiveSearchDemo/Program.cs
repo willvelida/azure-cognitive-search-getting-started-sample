@@ -70,8 +70,12 @@ catch (RequestFailedException ex) when (ex.Status == 429)
     throw;
 }
 
-Console.WriteLine("Returning all documents");
+Console.WriteLine("Indexing...");
+Thread.Sleep(2000);
+
 SearchClient searchClient = new SearchClient(new Uri(searchServiceUri), indexName, new AzureKeyCredential(searchServiceApiKey));
+
+Console.WriteLine("Query 1: Return all documents, returning only HotelId and HotelName fields");
 
 SearchOptions options = new SearchOptions()
 {
@@ -84,6 +88,39 @@ options.Select.Add("HotelId");
 options.Select.Add("HotelName");
 
 SearchResults<Hotel> result = searchClient.Search<Hotel>("*");
+
+foreach (var doc in result.GetResults())
+{
+    Console.WriteLine($"Hotel Id: {doc.Document.HotelId} | Hotel Name: {doc.Document.HotelName}");
+}
+
+Console.WriteLine();
+Console.WriteLine("Query 2: Find all hotels with rooms cheaper than $100 per night");
+
+options = new SearchOptions()
+{
+    Filter = "Rooms/any(r: r/BaseRate lt 100)"
+};
+options.Select.Add("HotelId");
+options.Select.Add("HotelName");
+
+result = searchClient.Search<Hotel>("*", options);
+
+foreach (var doc in result.GetResults())
+{
+    Console.WriteLine($"Hotel Id: {doc.Document.HotelId} | Hotel Name: {doc.Document.HotelName}");
+}
+
+Console.WriteLine();
+Console.WriteLine("Query 3: Search the HotelName field for the term 'hotel'");
+
+options = new SearchOptions();
+options.SearchFields.Add("HotelName");
+
+options.Select.Add("HotelId");
+options.Select.Add("HotelName");
+
+result = searchClient.Search<Hotel>("hotel", options);
 
 foreach (var doc in result.GetResults())
 {
